@@ -156,6 +156,30 @@ router.post('/trash-file', async (req, res) => {
     }
 });
 
+// Delete file permanently
+router.post('/delete-file', async (req, res) => {
+    const { fileId } = req.body; // Get file ID from the request body
+
+    if (!fileId) {
+        return res.status(400).send('File ID is required');
+    }
+
+    try {
+        const drive = google.drive({ version: 'v3', auth: oAuth2Client });
+
+        // Permanently delete the file
+        await drive.files.delete({
+            fileId,
+        });
+
+        console.log(`File ${fileId} permanently deleted`);
+        res.status(200).send('File permanently deleted');
+    } catch (error) {
+        console.error(`Error permanently deleting file ${fileId}:`, error);
+        res.status(500).send('Error permanently deleting file');
+    }
+});
+
 // Restore file
 router.post('/restore-file', async (req, res) => {
     const { fileId } = req.body; // Get file ID from the request body

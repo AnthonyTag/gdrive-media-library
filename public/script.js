@@ -111,21 +111,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const actions = document.createElement('div');
             actions.className = 'file-actions';
 
-            const downloadButton = document.createElement('a');
-            downloadButton.href = file.webContentLink;
-            downloadButton.target = '_blank';
-            downloadButton.className = 'file-action';
-            downloadButton.textContent = 'Download';
-
-            const viewButton = document.createElement('a');
-            viewButton.href = file.webViewLink;
-            viewButton.target = '_blank';
-            viewButton.className = 'file-action';
-            viewButton.textContent = 'Open in Drive';
-
-            actions.appendChild(downloadButton);
-            actions.appendChild(viewButton);
-
             if (viewingTrash) {
                 const restoreButton = document.createElement('button');
                 restoreButton.className = 'file-action restore-button';
@@ -150,7 +135,54 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 });
                 actions.appendChild(restoreButton);
+
+                const deleteForeverButton = document.createElement('button');
+                deleteForeverButton.className = 'file-action trash-button';
+                deleteForeverButton.style.backgroundColor = '#dc3545'; // Red color
+                deleteForeverButton.textContent = 'Delete Forever';
+                deleteForeverButton.addEventListener('click', async () => {
+                    const confirmation = confirm(
+                        `Are you sure you want to permanently delete the file "${file.name}"? This action cannot be undone.`
+                    );
+                
+                    if (!confirmation) {
+                        return; // Exit if the user cancels
+                    }
+                
+                    try {
+                        const response = await fetch('/delete-file', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fileId: file.id }),
+                        });
+                
+                        if (response.ok) {
+                            console.log(`File ${file.id} deleted forever`);
+                            fetchFiles(); // Refresh the file list
+                        } else {
+                            throw new Error('Failed to delete the file');
+                        }
+                    } catch (error) {
+                        console.error(`Error deleting file ${file.id}:`, error);
+                        alert('Failed to delete the file. Please try again.');
+                    }
+                });
+                actions.appendChild(deleteForeverButton);                
             } else {
+                const downloadButton = document.createElement('a');
+                downloadButton.href = file.webContentLink;
+                downloadButton.target = '_blank';
+                downloadButton.className = 'file-action';
+                downloadButton.textContent = 'Download';
+                actions.appendChild(downloadButton);
+
+                const viewButton = document.createElement('a');
+                viewButton.href = file.webViewLink;
+                viewButton.target = '_blank';
+                viewButton.className = 'file-action';
+                viewButton.textContent = 'Open in Drive';
+                actions.appendChild(viewButton);
+
                 const trashButton = document.createElement('button');
                 trashButton.className = 'file-action trash-button';
                 trashButton.textContent = 'Trash';
