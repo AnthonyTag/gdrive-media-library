@@ -100,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
      * @returns {string} - The constructed endpoint URL.
      */
     function getFetchEndpoint() {
+        console.log("current search query: ", currentSearchQuery);
         return currentSearchQuery
             ? `/search?query=${encodeURIComponent(currentSearchQuery)}&showTrashed=${viewingTrash}`
             : `/files?showTrashed=${viewingTrash}`;
@@ -357,18 +358,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         viewTrashButton.addEventListener('click', toggleTrashView);
         sortSelect.addEventListener('change', (event) => fetchFiles(event.target.value));
         sortOrderButton.addEventListener('click', toggleSortOrder);
+        
+        // Trigger search on button click
         searchButton.addEventListener('click', () => {
             currentSearchQuery = searchInput.value.trim();
             fetchFiles(sortSelect.value);
+        });      
+        
+        // Trigger search on Enter key press
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                currentSearchQuery = searchInput.value.trim();
+                fetchFiles(sortSelect.value);
+            }
         });
+
+        // Clear search input
         clearSearchButton.addEventListener('click', () => {
             currentSearchQuery = '';
             searchInput.value = '';
             fetchFiles(sortSelect.value);
         });
+
         uploadButton.addEventListener('click', () => {
             fileInput.click();
         });
+
         fileInput.addEventListener('change', onFileInputChange);
     }
 

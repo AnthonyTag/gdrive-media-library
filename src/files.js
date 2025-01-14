@@ -70,6 +70,32 @@ router.get('/files', async (req, res) => {
 });
 
 /**
+ * GET /search - Search for files in Google Drive with substring matching.
+ */
+router.get('/search', async (req, res) => {
+    const { query, showTrashed = 'false' } = req.query;
+
+    if (!query) {
+        return res.status(400).send('Search query is required');
+    }
+
+    const driveQuery = `'${folderId}' in parents and trashed = ${showTrashed}`;
+
+    try {
+        // Fetch all files from Google Drive within the folder
+        const files = await fetchFilesFromDrive(driveQuery);
+
+        // Perform substring filtering locally
+        const filteredFiles = files.filter((file) => file.name.toLowerCase().includes(query.toLowerCase()));
+
+        res.json(filteredFiles);
+    } catch (error) {
+        console.error('Error searching files:', error);
+        res.status(500).send('Error searching files');
+    }
+});
+
+/**
  * GET /thumbnail/:fileId - Fetch a file thumbnail.
  */
 router.get('/thumbnail/:fileId', async (req, res) => {
