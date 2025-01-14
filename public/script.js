@@ -12,6 +12,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchButton = document.getElementById('searchButton');
     const clearSearchButton = document.getElementById('clearSearchButton');
 
+    const uploadButton = document.getElementById('uploadButton');
+    const fileInput = document.createElement('input');
+    
+    fileInput.type = 'file';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+
     // State Variables
     let sortOrder = 'asc';
     let viewingTrash = false;
@@ -186,6 +194,32 @@ document.addEventListener('DOMContentLoaded', async () => {
         return actions;
     }
 
+    async function onFileInputChange(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        const formData = new FormData();
+        files.forEach((file) => formData.append('files', file));
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (response.ok) {
+                alert('Files uploaded successfully!');
+                // Optionally, refresh the file list
+                fetchFiles();
+            } else {
+                alert('Error uploading files. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error uploading files:', error);
+            alert('Error uploading files. Please check the console for details.');
+        }
+    }
+
     /**
      * Create a "Download" button for a file.
      * @param {Object} file - The file object containing metadata.
@@ -332,6 +366,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             searchInput.value = '';
             fetchFiles(sortSelect.value);
         });
+        uploadButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+        fileInput.addEventListener('change', onFileInputChange);
     }
 
     /**
