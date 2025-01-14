@@ -1,3 +1,4 @@
+/* General Reset */
 body {
     font-family: Arial, sans-serif;
     background-color: #f9f9f9;
@@ -5,6 +6,7 @@ body {
     padding: 0;
 }
 
+/* Navbar Styles */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -24,6 +26,7 @@ body {
     font-size: 14px;
 }
 
+/* Container Styles */
 .container {
     text-align: center;
     background: #fff;
@@ -34,6 +37,7 @@ body {
     max-width: 600px;
 }
 
+/* Button Styles */
 button,
 .file-action {
     padding: 10px 20px;
@@ -43,8 +47,8 @@ button,
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    text-decoration: none;
     text-align: center;
+    text-decoration: none;
 }
 
 button:hover,
@@ -57,6 +61,7 @@ button:active,
     background-color: #004085;
 }
 
+/* File List Styles */
 .file-list {
     margin-top: 20px;
 }
@@ -82,47 +87,30 @@ button:active,
 }
 
 .file-item span {
-    flex: 1; /* Ensures the file name takes up remaining space */
+    flex: 1;
     margin-right: 10px;
     text-align: left;
 }
 
 .file-actions {
     display: flex;
-    gap: 10px; /* Consistent spacing between buttons */
+    gap: 10px;
 }
 
-.file-action {
-    padding: 5px 10px;
-    background-color: #007bff;
-    color: white;
-    text-decoration: none;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.file-action:hover {
-    background-color: #0056b3;
-}
-
-.file-action:active {
-    background-color: #004085;
-}
-
-/* Specific styles for the Trash button */
+/* Trash Button Styles */
 .trash-button {
-    background-color: #dc3545; /* Red for trash */
+    background-color: #dc3545;
 }
 
 .trash-button:hover {
-    background-color: #c82333; /* Darker red on hover */
+    background-color: #c82333;
 }
 
 .trash-button:active {
-    background-color: #bd2130; /* Even darker red when active */
+    background-color: #bd2130;
 }
 
-/* New styles for sorting dropdown */
+/* Sorting Dropdown Styles */
 select {
     padding: 8px;
     font-size: 16px;
@@ -155,7 +143,7 @@ select:focus {
     background-color: #004085;
 }
 
-/* search stuff */
+/* Search Input and Buttons */
 #searchInput {
     padding: 10px;
     width: 200px;
@@ -164,7 +152,8 @@ select:focus {
     border-radius: 4px;
 }
 
-#searchButton, #clearSearchButton {
+#searchButton,
+#clearSearchButton {
     padding: 10px 15px;
     background-color: #007bff;
     color: white;
@@ -173,6 +162,7 @@ select:focus {
     cursor: pointer;
 }
 
-#searchButton:hover, #clearSearchButton:hover {
+#searchButton:hover,
+#clearSearchButton:hover {
     background-color: #0056b3;
 }

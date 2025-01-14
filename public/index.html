@@ -4,24 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anthony's Media Library</title>
+    <!-- Link to External Stylesheet -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Navbar Section -->
     <div class="navbar">
         <div class="title">Anthony's Media Library</div>
         <div class="container">
+            <!-- Search Input and Buttons -->
             <input type="text" id="searchInput" placeholder="Search files..." />
             <button id="searchButton">Search</button>
             <button id="clearSearchButton">Clear Search</button>
         </div>
         <div id="accountName" class="account-info">Not logged in</div>
     </div>
+
+    <!-- Main Container -->
     <div class="container">
+        <!-- Authentication Button (Hidden by Default) -->
         <button id="authButton" style="display: none;">Authenticate with Google</button>
-        
+
+        <!-- Upload Section -->
         <button id="uploadButton">Upload Files</button>
         <div id="uploadStatus"></div>
 
+        <!-- Sorting and Viewing Options -->
         <h2>Sort Files</h2>
         <select id="sortSelect">
             <option value="createdTime" selected>Sort by Creation Date</option>
@@ -31,8 +39,12 @@
         </select>
         <button id="sortOrderButton">Ascending</button>
         <button id="viewTrashButton">View Trash</button>
+
+        <!-- File List Section -->
         <div id="fileList" class="file-list"></div>
     </div>
+
+    <!-- Link to External JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>

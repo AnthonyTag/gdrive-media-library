@@ -1,35 +1,47 @@
+/**
+ * Express Router setup for Google OAuth2 authentication.
+ */
 const express = require('express');
 const fs = require('fs');
 const { google } = require('googleapis');
+const dotenv = require('dotenv');
+
+dotenv.config(); // Load environment variables from .env file
 
 const router = express.Router();
 
-const dotenv = require('dotenv');
-dotenv.config(); // Ensure this is called to load .env variables
+// Constants
+const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
+const TOKEN_PATH = 'tokens.json';
 
-const CLIENT_ID = process.env.CLIENT_ID;
-const CLIENT_SECRET = process.env.CLIENT_SECRET;
-const REDIRECT_URI = process.env.REDIRECT_URI;
+// Initialize OAuth2 client
+const oAuth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
-const oAuth2Client = new google.auth.OAuth2(
-    CLIENT_ID, 
-    CLIENT_SECRET, 
-    REDIRECT_URI
-);
-
-// Log the Redirect URI for debugging
-console.log('Redirect URI:', process.env.REDIRECT_URI);
-
-// Load tokens from file on startup, if available
-try {
-    const tokens = JSON.parse(fs.readFileSync('tokens.json', 'utf8'));
-    oAuth2Client.setCredentials(tokens);
-    console.log('Tokens loaded from file.');
-} catch (error) {
-    console.log('No tokens found, please authenticate via /auth.');
+/**
+ * Load saved tokens into OAuth2 client if available.
+ */
+function loadTokens() {
+    try {
+        const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
+        oAuth2Client.setCredentials(tokens);
+        console.log('Tokens loaded from file.');
+    } catch (error) {
+        console.log('No tokens found. Please authenticate via /auth.');
+    }
 }
 
-// Generate Auth URL and redirect the user
+/**
+ * Save tokens to file.
+ * @param {object} tokens - The tokens to save.
+ */
+function saveTokens(tokens) {
+    fs.writeFileSync(TOKEN_PATH, JSON.stringify(tokens));
+    console.log('Tokens saved to file.');
+}
+
+/**
+ * GET /auth - Redirect user to Google OAuth2 authentication page.
+ */
 router.get('/auth', (req, res) => {
     const authUrl = oAuth2Client.generateAuthUrl({
         access_type: 'offline',
@@ -40,22 +52,19 @@ router.get('/auth', (req, res) => {
             'https://www.googleapis.com/auth/userinfo.email',
         ],
     });
-
-    // Redirect the user to the Google OAuth authentication page
     res.redirect(authUrl);
 });
 
-// Handle Callback and Save Tokens
+/**
+ * GET /callback - Handle OAuth2 callback and save tokens.
+ */
 router.get('/callback', async (req, res) => {
     const code = req.query.code;
+
     try {
         const { tokens } = await oAuth2Client.getToken(code);
         oAuth2Client.setCredentials(tokens);
-
-        // Save tokens to file for future use
-        fs.writeFileSync('tokens.json', JSON.stringify(tokens));
-        console.log('Tokens saved:', tokens);
-
+        saveTokens(tokens);
         res.redirect('/');
     } catch (error) {
         console.error('Error during authentication:', error);
@@ -63,27 +72,24 @@ router.get('/callback', async (req, res) => {
     }
 });
 
-// Check Authentication Status
+/**
+ * GET /status - Check if the user is authenticated.
+ */
 router.get('/status', (req, res) => {
     try {
-        const tokens = JSON.parse(fs.readFileSync('tokens.json', 'utf8'));
-        if (tokens) {
-            return res.json({ authenticated: true });
-        }
+        const tokens = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf8'));
+        res.json({ authenticated: !!tokens });
     } catch (error) {
-        // No tokens found
+        res.json({ authenticated: false });
     }
-    res.json({ authenticated: false });
 });
 
-// Fetch User Profile
+/**
+ * GET /profile - Fetch and return the user's profile information.
+ */
 router.get('/profile', async (req, res) => {
     try {
-        const oauth2 = google.oauth2({
-            auth: oAuth2Client,
-            version: 'v2',
-        });
-
+        const oauth2 = google.oauth2({ auth: oAuth2Client, version: 'v2' });
         const userInfo = await oauth2.userinfo.get();
         res.json({ name: userInfo.data.name });
     } catch (error) {
@@ -92,14 +98,17 @@ router.get('/profile', async (req, res) => {
     }
 });
 
-// Refresh Tokens
+/**
+ * Event listener for token refresh.
+ */
 oAuth2Client.on('tokens', (tokens) => {
     console.log('Tokens refreshed:', tokens);
     if (tokens.refresh_token) {
-        // Save the new refresh token
-        fs.writeFileSync('tokens.json', JSON.stringify(tokens));
-        console.log('Updated tokens saved.');
+        saveTokens(tokens);
     }
 });
+
+// Load tokens on startup
+loadTokens();
 
 module.exports = { router, oAuth2Client };
