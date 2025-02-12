@@ -136,3 +136,8 @@ dist
 .pnp.*
 
 tokens.json
+
+# stupid mac stuff
+.DS_Store
+
+
