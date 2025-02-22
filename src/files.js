@@ -14,6 +14,8 @@ const upload = multer({ dest: 'uploads-temp/' }); // Temporary file upload direc
 // Constants
 const folderId = '18vySb3kWlLmnYPRdA9wbpzN0Q61jKkhc';
 
+let globalTagList = [];
+
 /**
  * Initialize Google Drive API instance.
  * @returns {google.drive_v3.Drive} - Authenticated Drive instance.
@@ -32,9 +34,14 @@ async function fetchFilesFromDrive(query) {
     const response = await drive.files.list({
         q: query,
         pageSize: 100,
-        fields: 'files(id, name, thumbnailLink, webContentLink, webViewLink, createdTime, mimeType, size)',
+        fields: 'files(id, name, thumbnailLink, webContentLink, webViewLink, createdTime, mimeType, size, appProperties)',
     });
-    return response.data.files;
+
+    return response.data.files.map((file) => ({
+        ...file,
+        tags: file.appProperties?.tags ? file.appProperties.tags.split(',') : [],
+        backendSyncStatus: 'synced', // Explicitly set backendSyncStatus
+    }));
 }
 
 /**
@@ -51,6 +58,15 @@ function cleanupTempFiles(files) {
             }
         });
     });
+}
+
+/**
+ * Update the global tag list by aggregating tags from all files.
+ * @param {Array} files - Array of file objects.
+ */
+function updateGlobalTagList(files) {
+    const allTags = files.flatMap((file) => file.tags || []);
+    globalTagList = [...new Set(allTags)]; // Remove duplicates
 }
 
 /**
@@ -150,6 +166,99 @@ router.post('/upload', upload.array('files', 10), async (req, res) => {
         res.status(500).json({ error: 'Error uploading files.' });
     } finally {
         cleanupTempFiles(req.files);
+    }
+});
+
+/**
+ * POST /update-tags - Update tags for a file.
+ * @param {string} fileId - The ID of the file.
+ * @param {string} action - The action to perform ('add' or 'remove').
+ * @param {string} tag - The tag to add or remove.
+ */
+router.post('/update-tags', async (req, res) => {
+    const { fileId, action, tag } = req.body;
+
+    if (!fileId || !action || !tag) {
+        return res.status(400).send('File ID, action, and tag are required');
+    }
+
+    try {
+        const drive = getDriveInstance();
+
+        // Get existing tags
+        const file = await drive.files.get({
+            fileId,
+            fields: 'appProperties',
+        });
+
+        const existingTags = file.data.appProperties?.tags
+            ? file.data.appProperties.tags.split(',')
+            : [];
+
+        // Modify tags based on the action
+        let updatedTags;
+        if (action === 'add') {
+            if (existingTags.includes(tag)) {
+                return res.status(200).json({
+                    message: `Tag "${tag}" already exists. No changes made.`,
+                    tags: existingTags,
+                    backendSyncStatus: 'synced', // Indicate no changes needed
+                });
+            }
+            updatedTags = [...existingTags, tag];
+        } else if (action === 'remove') {
+            if (!existingTags.includes(tag)) {
+                return res.status(200).json({
+                    message: `Tag "${tag}" does not exist. No changes made.`,
+                    tags: existingTags,
+                    backendSyncStatus: 'synced', // Indicate no changes needed
+                });
+            }
+            updatedTags = existingTags.filter((t) => {
+                return t !== tag;
+            });
+
+        } else {
+            return res.status(400).send('Invalid action or tag already exists');
+        }
+
+        // Update file metadata in Google Drive
+        if (updatedTags.length === 0) {
+            console.log('Clearing appProperties for file:', fileId);
+            await drive.files.update({
+                fileId,
+                requestBody: {
+                    appProperties: { tags: null },
+                },
+            });
+        } else {
+            console.log('Updating appProperties with tags:', updatedTags.join(','));
+            await drive.files.update({
+                fileId,
+                requestBody: {
+                    appProperties: { tags: updatedTags.join(',') },
+                },
+            });
+        }
+
+        // Fetch the updated file metadata after the update
+        const updatedFile = await drive.files.get({
+            fileId,
+            fields: 'appProperties',
+        });
+        console.log('Updated tags in Drive:', updatedFile.data.appProperties?.tags || 'No tags');
+
+        res.status(200).json({
+            message: 'Tags updated successfully',
+            tags: updatedFile.data.appProperties?.tags?.split(',') || [],
+            backendSyncStatus: 'synced', // Indicate successful sync
+        });
+    } catch (error) {
+        console.error('Error updating tags:', error.message, error.response?.data);
+
+        if (!res.headersSent) {
+            res.status(500).send(`Error updating tags: ${error.message}`);
+        }
     }
 });
 
